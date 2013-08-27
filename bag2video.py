@@ -5,7 +5,7 @@ import rosbag, rospy, numpy as np
 import sys, os, cv2
 from cv_bridge import CvBridge
 from itertools import izip, repeat
-PRECISION = 10
+import argparse
 
 def get_info(bag, topic=None, start_time=rospy.Time(0), stop_time=rospy.Time(sys.maxint)):
     size = (0,0)
@@ -29,29 +29,57 @@ def calc_n_frames(times, precision=10):
     intervals = np.diff(times)
     return np.int64(np.round(precision*intervals/min(intervals)))
 
-def write_frames(bag, writer, topic=None, nframes=repeat(1), start_time=rospy.Time(0), stop_time=rospy.Time(sys.maxint)):
+def write_frames(bag, writer, total, topic=None, nframes=repeat(1), start_time=rospy.Time(0), stop_time=rospy.Time(sys.maxint), viz=False):
     bridge = CvBridge()
-    cv2.namedWindow('win')
+    if viz:
+        cv2.namedWindow('win')
+    count = 1
     iterator = bag.read_messages(topics=topic, start_time=start_time, end_time=stop_time)
     for (topic, msg, time), reps in izip(iterator, nframes):
-        print 'Writing frame at time ', time
+        print '\rWriting frame %s of %s at time %s' % (count, total, time),
         img = np.asarray(bridge.imgmsg_to_cv(msg, 'rgb8'))
         for rep in range(reps):
             writer.write(img)
-        cv2.imshow('win', img)
-        cv2.waitKey(1)
+        imshow('win', img)
+        count += 1
+
+def imshow(win, img):
+    cv2.imshow(win, img)
+    cv2.waitKey(1)
+
+def noshow(win, img):
+    pass
 
 if __name__ == '__main__':
-    filename = '/mnt/hgfs/lazewatd/2013-08-22-16-18-36.bag'
-    outfile = os.path.join(*os.path.split(filename)[-1].split('.')[:-1]) + '.avi'
-    # rate = 13
-    # size = (640, 480)
-    bag = rosbag.Bag(filename, 'r')
+    parser = argparse.ArgumentParser(description='Extract and encode video from bag files.')
+    parser.add_argument('--outfile', '-o', action='store', default=None,
+                        help='Destination of the video file. Defaults to the location of the input file.')
+    parser.add_argument('--precision', '-p', action='store', default=10, type=int,
+                        help='Precision of variable framerate interpolation. Higher numbers\
+                        match the actual framerater better, but result in larger files and slower conversion times.')
+    parser.add_argument('--viz', '-v', action='store_true', help='Display frames in a GUI window.')
+    parser.add_argument('--start', '-s', action='store', default=rospy.Time(0), type=rospy.Time,
+                        help='Rostime representing where to start in the bag.')
+    parser.add_argument('--end', '-e', action='store', default=rospy.Time(sys.maxint), type=rospy.Time,
+                        help='Rostime representing where to stop in the bag.')
+
+    parser.add_argument('bagfile')
+    parser.add_argument('topic')
+
+    args = parser.parse_args()
+
+    if not args.viz:
+        imshow = noshow
+
+    outfile = args.outfile
+    if not outfile:
+        outfile = os.path.join(*os.path.split(args.bagfile)[-1].split('.')[:-1]) + '.avi'
+    bag = rosbag.Bag(args.bagfile, 'r')
     print 'Calculating video properties'
-    rate, minrate, maxrate, size, times = get_info(bag, '/head_mount_kinect/rgb/image_raw', stop_time=rospy.Time(1377213524600930397))
-    nframes = calc_n_frames(times, PRECISION)
+    rate, minrate, maxrate, size, times = get_info(bag, '/head_mount_kinect/rgb/image_raw', start_time=args.start, stop_time=args.end)
+    nframes = calc_n_frames(times, args.precision)
     # writer = cv2.VideoWriter(outfile, cv2.cv.CV_FOURCC(*'DIVX'), rate, size)
-    writer = cv2.VideoWriter(outfile, cv2.cv.CV_FOURCC(*'DIVX'), np.ceil(maxrate*PRECISION), size)
+    writer = cv2.VideoWriter(outfile, cv2.cv.CV_FOURCC(*'DIVX'), np.ceil(maxrate*args.precision), size)
     print 'Writing video'
-    write_frames(bag, writer, '/head_mount_kinect/rgb/image_raw', nframes, stop_time=rospy.Time(1377213524600930000))
+    write_frames(bag, writer, len(times), topic='/head_mount_kinect/rgb/image_raw', nframes=nframes, start_time=args.start, stop_time=args.end)
     writer.release()
