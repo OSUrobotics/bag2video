@@ -1,7 +1,7 @@
 bag2video
 =========
 
-Convert images in a rosbag to a video
+Convert images in a rosbag to a variable framerate video. Variable framerate is achieved through duplicating frames since OpenCv can't encode at variable framerates. This can produce very large files which should be re-encoded with something like ffmpeg.
 
 # Usage
     usage: bag2video.py [-h] [--outfile OUTFILE] [--precision PRECISION] [--viz]
