@@ -85,6 +85,6 @@ if __name__ == '__main__':
         # writer = cv2.VideoWriter(outfile, cv2.cv.CV_FOURCC(*'DIVX'), rate, size)
         writer = cv2.VideoWriter(outfile, cv2.cv.CV_FOURCC(*'DIVX'), np.ceil(maxrate*args.precision), size)
         print 'Writing video'
-        write_frames(bag, writer, len(times), topic='/head_mount_kinect/rgb/image_raw', nframes=nframes, start_time=args.start, stop_time=args.end, encoding=args.encoding)
+        write_frames(bag, writer, len(times), topic=args.topic, nframes=nframes, start_time=args.start, stop_time=args.end, encoding=args.encoding)
         writer.release()
         print '\n'
