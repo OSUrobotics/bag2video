@@ -3,9 +3,22 @@
 from __future__ import division
 import rosbag, rospy, numpy as np
 import sys, os, cv2, glob
-from cv_bridge import CvBridge
 from itertools import izip, repeat
 import argparse
+
+# try to find cv_bridge:
+try:
+    from cv_bridge import CvBridge
+except ImportError:
+    # assume we are on an older ROS version, and try loading the dummy manifest
+    # to see if that fixes the import error
+    try:
+        import roslib; roslib.load_manifest("bag2video")
+        from cv_bridge import CvBridge
+    except:
+        print "Could not find ROS package: cv_bridge"
+        print "If ROS version is pre-Groovy, try putting this package in ROS_PACKAGE_PATH"
+        sys.exit(1)
 
 def get_info(bag, topic=None, start_time=rospy.Time(0), stop_time=rospy.Time(sys.maxint)):
     size = (0,0)

@@ -1,0 +1,10 @@
+<package>
+  <description brief="bag2video">
+    This is a dummy manifest to find cv_bridge for older versions of ROS
+  </description>
+  <author>OSUrobotics</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <depend package="cv_bridge" />
+</package>
+
