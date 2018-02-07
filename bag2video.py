@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 
 from __future__ import division
 import rosbag, rospy, numpy as np
@@ -50,7 +50,7 @@ def write_frames(bag, writer, total, topic=None, nframes=repeat(1), start_time=r
     iterator = bag.read_messages(topics=topic, start_time=start_time, end_time=stop_time)
     for (topic, msg, time), reps in izip(iterator, nframes):
         print '\rWriting frame %s of %s at time %s' % (count, total, time),
-        img = np.asarray(bridge.imgmsg_to_cv(msg, 'bgr8'))
+        img = np.asarray(bridge.imgmsg_to_cv2(msg, 'bgr8'))
         for rep in range(reps):
             writer.write(img)
         imshow('win', img)
@@ -96,7 +96,7 @@ if __name__ == '__main__':
         rate, minrate, maxrate, size, times = get_info(bag, args.topic, start_time=args.start, stop_time=args.end)
         nframes = calc_n_frames(times, args.precision)
         # writer = cv2.VideoWriter(outfile, cv2.cv.CV_FOURCC(*'DIVX'), rate, size)
-        writer = cv2.VideoWriter(outfile, cv2.cv.CV_FOURCC(*'DIVX'), np.ceil(maxrate*args.precision), size)
+        writer = cv2.VideoWriter(outfile, cv2.VideoWriter_fourcc(*'DIVX'), np.ceil(maxrate*args.precision), size)
         print 'Writing video'
         write_frames(bag, writer, len(times), topic=args.topic, nframes=nframes, start_time=args.start, stop_time=args.end, encoding=args.encoding)
         writer.release()
